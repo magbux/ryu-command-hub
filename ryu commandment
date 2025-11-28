@@ -796,4 +796,4 @@ player.CharacterAdded:Connect(function()
     tptool = nil
 end)
 createGUI()
-print("Command system loaded! Type commands in chat to use.")
+print("ryu vro im getting tired of typing like a goody two shoes system loaded! Type commands in chat to use.")
