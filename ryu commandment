@@ -21,11 +21,11 @@ local flySpeed = 100
 local healthChangedConn
 
 -- Variables for features
-local bodyVelocity, bodyGyro, connection, flyTrack, trail, particles
+local bodyVelocity, bodyGyro, connection
 local godConnection, noclipConnection
 local espFolder
 
--- Mobile Fly Buttons (only addition for mobile support)
+-- Mobile Fly Support
 local mobileFlyGui
 local upPressed = false
 local downPressed = false
@@ -35,7 +35,6 @@ local function createMobileFlyButtons()
 
     mobileFlyGui = Instance.new("ScreenGui")
     mobileFlyGui.Name = "MobileFlyControls"
-"
     mobileFlyGui.ResetOnSpawn = false
     mobileFlyGui.Parent = player:WaitForChild("PlayerGui")
 
@@ -59,19 +58,18 @@ local function createMobileFlyButtons()
     down.MouseButton1Down:Connect(function() downPressed = true end)
     down.MouseButton1Up:Connect(function() downPressed = false end)
 
-    -- Simulate Space / LeftShift for mobile
     spawn(function()
         while mobileFlyGui and mobileFlyGui.Parent do
             if flying then
                 UIS:SendVirtualInput(Enum.KeyCode.Space, upPressed, false)
                 UIS:SendVirtualInput(Enum.KeyCode.LeftShift, downPressed, false)
             end
-            task.wait(0.05)
+            task.wait(0.03)
         end
     end)
 end
 
--- Create GUI (unchanged)
+-- Create GUI (exactly your original)
 local function createGUI()
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "CommandsGUI"
@@ -281,7 +279,7 @@ local function findPlayer(prefix)
     return nil
 end
 
--- Flying functions (only change: added mobile buttons)
+-- Flying functions (with mobile support)
 local function startFlying()
     local character = player.Character
     if not character or flying then return end
@@ -291,7 +289,7 @@ local function startFlying()
     if not humanoid or not rootPart then return end
   
     flying = true
-    createMobileFlyButtons()  -- Mobile support added here
+    createMobileFlyButtons() -- Mobile support
 
     bodyVelocity = Instance.new("BodyVelocity")
     bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
@@ -340,50 +338,305 @@ local function stopFlying()
     print("Flying disabled!")
 end
 
--- Rest of your functions (100% unchanged)
-local function startNoclip() -- [same as your original] ... end
-local function stopNoclip() -- [same] ... end
-local function startESP() -- [same] ... end
-local function stopESP() -- [same] ... end
-local function createTPTool() -- [same] ... end
-local function startGodMode() -- [same] ... end
-local function stopGodMode() -- [same] ... end
-local function startSpectate(target) -- [same] ... end
-local function stopSpectate() -- [same] ... end
-local function teleportTo(target) -- [same] ... end
-local function setWalkSpeed(speed) -- [same] ... end
-local function setJumpPower(power) -- [same] ... end
-local function setGravity(grav) -- [same] ... end
-local function startInfJump() -- [same] ... end
-local function stopInfJump() -- [same] ... end
-local function makeInvisible() -- [same] ... end
-local function makeVisible() -- [same] ... end
-local function giveBTools() -- [same] ... end
-local function startFullbright() -- [same] ... end
-local function stopFullbright() -- [same] ... end
-local function rejoinServer() -- [same] ... end
-local function setFlySpeed(speed) flySpeed = speed print("Fly speed set to " .. speed) end
-local function setFOV(fov) workspace.CurrentCamera.FieldOfView = fov end
-local function setTimeOfDay(hour) game.Lighting.TimeOfDay = hour .. ":00:00" end
-local function setFogEnd(distance) game.Lighting.FogEnd = distance end
-local function activateSpeedCoil() setWalkSpeed(50) end
-local function deactivateSpeedCoil() setWalkSpeed(16) end
-local function activateGravityCoil() setJumpPower(100) setGravity(50) end
-local function deactivateGravityCoil() setJumpPower(50) setGravity(196.2) end
+-- Noclip
+local function startNoclip()
+    if noclip then return end
+    noclip = true
+    noclipConnection = RunService.Stepped:Connect(function()
+        if not noclip then return end
+        local character = player.Character
+        if character then
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
+    print("Noclip enabled!")
+end
+
+local function stopNoclip()
+    noclip = false
+    if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
+    local character = player.Character
+    if character then
+        for _, part in pairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+    end
+    print("Noclip disabled!")
+end
+
+-- ESP
+local function startESP()
+    if esp then return end
+    esp = true
+    espFolder = Instance.new("Folder")
+    espFolder.Name = "ESPFolder"
+    espFolder.Parent = workspace
+  
+    for _, otherPlayer in pairs(game.Players:GetPlayers()) do
+        if otherPlayer ~= player then
+            local function addESP(character)
+                if not character then return end
+                local rootPart = character:FindFirstChild("HumanoidRootPart")
+                if not rootPart then return end
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "ESP"
+                highlight.FillColor = Color3.fromRGB(255, 100, 100)
+                highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+                highlight.FillTransparency = 0.5
+                highlight.OutlineTransparency = 0
+                highlight.Adornee = character
+                highlight.Parent = espFolder
+            end
+            if otherPlayer.Character then addESP(otherPlayer.Character) end
+            otherPlayer.CharacterAdded:Connect(addESP)
+        end
+    end
+  
+    game.Players.PlayerAdded:Connect(function(newPlayer)
+        newPlayer.CharacterAdded:Connect(function(character)
+            if esp then
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "ESP"
+                highlight.FillColor = Color3.fromRGB(255, 100, 100)
+                highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+                highlight.FillTransparency = 0.5
+                highlight.OutlineTransparency = 0
+                highlight.Adornee = character
+                highlight.Parent = espFolder
+            end
+        end)
+    end)
+    print("ESP enabled!")
+end
+
+local function stopESP()
+    esp = false
+    if espFolder then espFolder:Destroy() espFolder = nil end
+    print("ESP disabled!")
+end
+
+-- All other functions (100% original)
+local function createTPTool()
+    if tptool then return end
+    local tool = Instance.new("Tool")
+    tool.Name = "TP Tool"
+    tool.RequiresHandle = false
+    tool.Activated:Connect(function()
+        local mouse = player:GetMouse()
+        local character = player.Character
+        if character and mouse.Hit then
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                rootPart.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0))
+            end
+        end
+    end)
+    tool.Parent = player.Backpack
+    tptool = tool
+    print("TP Tool equipped!")
+end
+
+local function startGodMode()
+    if godmode then return end
+    godmode = true
+    godConnection = RunService.Heartbeat:Connect(function()
+        local char = player.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.MaxHealth = math.huge
+                hum.Health = math.huge
+                hum.BreakJointsOnDeath = false
+                pcall(function() hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false) end)
+            end
+        end
+    end)
+    local char = player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            healthChangedConn = hum.HealthChanged:Connect(function(h)
+                if h < math.huge then hum.Health = math.huge end
+            end)
+        end
+    end
+    print("God Mode enabled!")
+end
+
+local function stopGodMode()
+    godmode = false
+    if godConnection then godConnection:Disconnect() godConnection = nil end
+    if healthChangedConn then healthChangedConn:Disconnect() healthChangedConn = nil end
+    local char = player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.MaxHealth = 100
+            hum.Health = 100
+            hum.BreakJointsOnDeath = true
+            pcall(function() hum:SetStateEnabled(Enum.HumanoidStateType.Dead, true) end)
+        end
+    end
+    print("God Mode disabled!")
+end
+
+local function startSpectate(target)
+    if not target or not target.Character then return end
+    local humanoid = target.Character:FindFirstChild("Humanoid")
+    if not humanoid then return end
+    workspace.CurrentCamera.CameraSubject = humanoid
+    spectating = true
+    spectateTarget = target
+    print("Spectating " .. target.Name)
+end
+
+local function stopSpectate()
+    if not player.Character then return end
+    local humanoid = player.Character:FindFirstChild("Humanoid")
+    if humanoid then workspace.CurrentCamera.CameraSubject = humanoid end
+    spectating = false
+    spectateTarget = nil
+    print("Stopped spectating")
+end
+
+local function teleportTo(target)
+    if not target or not target.Character then return end
+    local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+    local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+    if rootPart and targetRoot then
+        rootPart.CFrame = targetRoot.CFrame * CFrame.new(0, 0, -3)
+    end
+    print("Teleported to " .. target.Name)
+end
+
+local function setWalkSpeed(speed)
+    local char = player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed = speed print("Walk speed set to " .. speed) end
+    end
+end
+
+local function setJumpPower(power)
+    local char = player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.JumpPower = power print("Jump power set to " .. power) end
+    end
+end
+
+local function setGravity(grav)
+    workspace.Gravity = grav
+    print("Gravity set to " .. grav)
+end
+
+local function startInfJump()
+    if infjump then return end
+    infjump = true
+    infjumpConnection = UIS.JumpRequest:Connect(function()
+        local char = player.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+        end
+    end)
+    print("Infinite jump enabled!")
+end
+
+local function stopInfJump()
+    infjump = false
+    if infjumpConnection then infjumpConnection:Disconnect() infjumpConnection = nil end
+    print("Infinite jump disabled!")
+end
+
+local function makeInvisible()
+    local char = player.Character
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then part.Transparency = 1 end
+            if part:IsA("Decal") then part.Transparency = 1 end
+            if part:IsA("ParticleEmitter") or part:IsA("Trail") then part.Enabled = false end
+        end
+        print("Invisible enabled!")
+    end
+end
+
+local function makeVisible()
+    local char = player.Character
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then part.Transparency = 0 end
+            if part:IsA("Decal") then part.Transparency = 0 end
+            if part:IsA("ParticleEmitter") or part:IsA("Trail") then part.Enabled = true end
+        end
+        print("Visible enabled!")
+    end
+end
+
+local function giveBTools()
+    local tool1 = Instance.new("HopperBin") tool1.BinType = Enum.BinType.Grab tool1.Parent = player.Backpack
+    local tool2 = Instance.new("HopperBin") tool2.BinType = Enum.BinType.Clone tool2.Parent = player.Backpack
+    local tool3 = Instance.new("HopperBin") tool3.BinType = Enum.BinType.Hammer tool3.Parent = player.Backpack
+    print("BTools given!")
+end
+
+local lightingConnection
+local originalAmbient, originalBrightness, originalFogEnd
+
+local function startFullbright()
+    if lightingConnection then return end
+    originalAmbient = game.Lighting.Ambient
+    originalBrightness = game.Lighting.Brightness
+    originalFogEnd = game.Lighting.FogEnd
+    lightingConnection = RunService.RenderStepped:Connect(function()
+        game.Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+        game.Lighting.Brightness = 1
+        game.Lighting.FogEnd = 999999
+    end)
+    print("Fullbright enabled!")
+end
+
+local function stopFullbright()
+    if lightingConnection then lightingConnection:Disconnect() lightingConnection = nil end
+    game.Lighting.Ambient = originalAmbient
+    game.Lighting.Brightness = originalBrightness
+    game.Lighting.FogEnd = originalFogEnd
+    print("Fullbright disabled!")
+end
+
+local function rejoinServer()
+    game:GetService("TeleportService"):Teleport(game.PlaceId, player)
+    print("Rejoining server...")
+end
+
+local function setFOV(fov) workspace.CurrentCamera.FieldOfView = fov print("FOV set to " .. fov) end
+local function setTimeOfDay(hour) game.Lighting.TimeOfDay = hour .. ":00:00" print("Time set to " .. hour .. ":00") end
+local function setFogEnd(distance) game.Lighting.FogEnd = distance print("Fog end set to " .. distance) end
+local function activateSpeedCoil() setWalkSpeed(50) print("Speed coil activated!") end
+local function deactivateSpeedCoil() setWalkSpeed(16) print("Speed coil deactivated!") end
+local function activateGravityCoil() setJumpPower(100) setGravity(50) print("Gravity coil activated!") end
+local function deactivateGravityCoil() setJumpPower(50) setGravity(196.2) print("Gravity coil deactivated!") end
 local function healCharacter()
     local char = player.Character
     if char then
         local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum then hum.Health = hum.MaxHealth end
+        if hum then hum.Health = hum.MaxHealth print("Fully healed!") end
     end
 end
 
--- Only change: /main now loads your keysystem
+-- /main now loads your keysystem
 local function loadMainScript()
     loadstring(game:HttpGet(('https://raw.githubusercontent.com/magbux/Ryukeysystem/refs/heads/main/Keysystem'),true))()
+    print("Keysystem loaded!")
 end
 
--- Command handler (only /main changed)
+-- Command handler
 local function handleCommand(msg)
     msg = msg:lower()
     local parts = string.split(msg, " ")
@@ -392,7 +645,7 @@ local function handleCommand(msg)
 
     if cmd == "/fly" then startFlying()
     elseif cmd == "/unfly" then stopFlying()
-    elseif cmd == "/flyspeed" then local s = tonumber(arg1) if s then setFlySpeed(s) end
+    elseif cmd == "/flyspeed" then local speed = tonumber(arg1); if speed then flySpeed = speed print("Fly speed set to " .. speed) end
     elseif cmd == "/noclip" then startNoclip()
     elseif cmd == "/clip" then stopNoclip()
     elseif cmd == "/esp" then startESP()
@@ -401,12 +654,12 @@ local function handleCommand(msg)
     elseif cmd == "/godmode" then startGodMode()
     elseif cmd == "/ungodmode" then stopGodMode()
     elseif cmd == "/reset" then if player.Character then player.Character:BreakJoints() end
-    elseif cmd == "/spec" then local t = findPlayer(arg1) if t then startSpectate(t) end
+    elseif cmd == "/spec" then local target = findPlayer(arg1); if target then startSpectate(target) end
     elseif cmd == "/unspec" then stopSpectate()
-    elseif cmd == "/tpto" then local t = findPlayer(arg1) if t then teleportTo(t) end
-    elseif cmd == "/ws" then local s = tonumber(arg1) if s then setWalkSpeed(s) end
-    elseif cmd == "/jp" then local p = tonumber(arg1) if p then setJumpPower(p) end
-    elseif cmd == "/grav" then local g = tonumber(arg1) if g then setGravity(g) end
+    elseif cmd == "/tpto" then local target = findPlayer(arg1); if target then teleportTo(target) end
+    elseif cmd == "/ws" then local speed = tonumber(arg1); if speed then setWalkSpeed(speed) end
+    elseif cmd == "/jp" then local power = tonumber(arg1); if power then setJumpPower(power) end
+    elseif cmd == "/grav" then local grav = tonumber(arg1); if grav then setGravity(grav) end
     elseif cmd == "/infjump" then startInfJump()
     elseif cmd == "/uninfjump" then stopInfJump()
     elseif cmd == "/invisible" then makeInvisible()
@@ -415,9 +668,9 @@ local function handleCommand(msg)
     elseif cmd == "/fullbright" then startFullbright()
     elseif cmd == "/unfullbright" then stopFullbright()
     elseif cmd == "/rejoin" then rejoinServer()
-    elseif cmd == "/fov" then local f = tonumber(arg1) if f then setFOV(f) end
-    elseif cmd == "/time" then local h = tonumber(arg1) if h then setTimeOfDay(h) end
-    elseif cmd == "/fog" then local d = tonumber(arg1) if d then setFogEnd(d) end
+    elseif cmd == "/fov" then local fov = tonumber(arg1); if fov then setFOV(fov) end
+    elseif cmd == "/time" then local hour = tonumber(arg1); if hour then setTimeOfDay(hour) end
+    elseif cmd == "/fog" then local dist = tonumber(arg1); if dist then setFogEnd(dist) end
     elseif cmd == "/speedcoil" then activateSpeedCoil()
     elseif cmd == "/unspeedcoil" then deactivateSpeedCoil()
     elseif cmd == "/gravitycoil" then activateGravityCoil()
@@ -430,7 +683,7 @@ end
 player.Chatted:Connect(handleCommand)
 
 player.CharacterAdded:Connect(function()
-    if flying then stopFlying() startFlying() end
+    if flying then stopFlying() task.wait(0.5) startFlying() end
     if noclip then stopNoclip() startNoclip() end
     if infjump then stopInfJump() startInfJump() end
     if godmode then startGodMode() end
@@ -439,4 +692,4 @@ player.CharacterAdded:Connect(function()
 end)
 
 createGUI()
-print("ryu/sai loaded I'm tired of typing like a goody 2 shoes vro I'm washed")
+print("ryu/sai command I'm tired of typing like a jolly professor")
