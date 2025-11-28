@@ -146,7 +146,9 @@ local function createGUI()
         {cmd = "/speedcoil", desc = "Activate speed coil (ws 50)"},
         {cmd = "/unspeedcoil", desc = "Deactivate speed coil (ws 16)"},
         {cmd = "/gravitycoil", desc = "Activate gravity coil (jp 100, grav 50)"},
-        {cmd = "/ungravitycoil", desc = "Deactivate gravity coil (jp 50, grav 196)"}
+        {cmd = "/ungravitycoil", desc = "Deactivate gravity coil (jp 50, grav 196)"},
+        {cmd = "/heal", desc = "Restore full health"},
+        {cmd = "/main", desc = "Load main script"},
     }
   
     for _, cmdData in ipairs(commands) do
@@ -641,6 +643,24 @@ local function deactivateGravityCoil()
     setGravity(196.2)
     print("Gravity coil deactivated!")
 end
+local function healCharacter()
+    local char = player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.Health = hum.MaxHealth
+            print("Fully healed!")
+        else
+            print("No humanoid found!")
+        end
+    else
+        print("No character found!")
+    end
+end
+local function loadMainScript()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/magbux/ryurakio/refs/heads/main/ryusai"))()
+    print("Main script loaded!")
+end
 -- Command handler
 local function handleCommand(msg)
     msg = msg:lower()
@@ -759,8 +779,13 @@ local function handleCommand(msg)
         activateGravityCoil()
     elseif cmd == "/ungravitycoil" then
         deactivateGravityCoil()
+    elseif cmd == "/heal" then
+        healCharacter()
+    elseif cmd == "/main" then
+        loadMainScript()
     end
 end
+
 player.Chatted:Connect(handleCommand)
 player.CharacterAdded:Connect(function()
     if flying then stopFlying() end
