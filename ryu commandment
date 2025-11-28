@@ -658,7 +658,7 @@ local function healCharacter()
     end
 end
 local function loadMainScript()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/magbux/ryurakio/refs/heads/main/ryusai"))()
+    loadstring(game:HttpGet(('https://raw.githubusercontent.com/magbux/Ryukeysystem/refs/heads/main/Keysystem'),true))()
     print("Main script loaded!")
 end
 -- Command handler
