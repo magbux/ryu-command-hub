@@ -57,7 +57,7 @@ local function createGUI()
   
     local Title = Instance.new("TextLabel")
     Title.Name = "Title"
-    Title.Size = UDim2.new(1, -100, 0, 50)
+    Title.Size = UDim2.new(1, -60, 0, 50)
     Title.Position = UDim2.new(0, 0, 0, 0)
     Title.BackgroundTransparency = 1
     Title.Text = "ryu/sai command hub"
@@ -65,44 +65,6 @@ local function createGUI()
     Title.TextSize = 24
     Title.Font = Enum.Font.GothamBold
     Title.Parent = MainFrame
-  
-    local MinimizeButton = Instance.new("TextButton")
-    MinimizeButton.Name = "MinimizeButton"
-    MinimizeButton.Size = UDim2.new(0, 40, 0, 40)
-    MinimizeButton.Position = UDim2.new(1, -90, 0, 5)
-    MinimizeButton.BackgroundColor3 = Color3.fromRGB(255, 200, 50)
-    MinimizeButton.Text = "-"
-    MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    MinimizeButton.TextSize = 20
-    MinimizeButton.Font = Enum.Font.GothamBold
-    MinimizeButton.BorderSizePixel = 0
-    MinimizeButton.Parent = MainFrame
-  
-    local MinimizeCorner = Instance.new("UICorner")
-    MinimizeCorner.CornerRadius = UDim.new(0, 8)
-    MinimizeCorner.Parent = MinimizeButton
-  
-    local isMinimized = false
-    local originalSize = MainFrame.Size
-    local originalScrollSize
-  
-    MinimizeButton.MouseButton1Click:Connect(function()
-        isMinimized = not isMinimized
-        if isMinimized then
-            originalSize = MainFrame.Size
-            MainFrame.Size = UDim2.new(0, 350, 0, 50)
-            if ScrollFrame then
-                ScrollFrame.Visible = false
-            end
-            MinimizeButton.Text = "+"
-        else
-            MainFrame.Size = originalSize
-            if ScrollFrame then
-                ScrollFrame.Visible = true
-            end
-            MinimizeButton.Text = "-"
-        end
-    end)
   
     local CloseButton = Instance.new("TextButton")
     CloseButton.Name = "CloseButton"
@@ -353,7 +315,7 @@ local function stopNoclip()
     end
     print("Noclip disabled!")
 end
--- ESP functions (FIXED)
+-- ESP functions
 local function startESP()
     if esp then return end
     esp = true
@@ -368,16 +330,6 @@ local function startESP()
                 if not character then return end
                 local rootPart = character:FindFirstChild("HumanoidRootPart")
                 if not rootPart then return end
-              
-                local humanoid = character:FindFirstChildOfClass("Humanoid")
-                if humanoid then
-                    humanoid.Died:Connect(function()
-                        local highlight = character:FindFirstChild("ESP")
-                        if highlight then
-                            highlight:Destroy()
-                        end
-                    end)
-                end
               
                 local highlight = Instance.new("Highlight")
                 highlight.Name = "ESP"
@@ -397,19 +349,6 @@ local function startESP()
     game.Players.PlayerAdded:Connect(function(newPlayer)
         newPlayer.CharacterAdded:Connect(function(character)
             if esp then
-                local rootPart = character:FindFirstChild("HumanoidRootPart")
-                if not rootPart then return end
-              
-                local humanoid = character:FindFirstChildOfClass("Humanoid")
-                if humanoid then
-                    humanoid.Died:Connect(function()
-                        local highlight = character:FindFirstChild("ESP")
-                        if highlight then
-                            highlight:Destroy()
-                        end
-                    end)
-                end
-              
                 local highlight = Instance.new("Highlight")
                 highlight.Name = "ESP"
                 highlight.FillColor = Color3.fromRGB(255, 100, 100)
@@ -424,7 +363,6 @@ local function startESP()
   
     print("ESP enabled!")
 end
-
 local function stopESP()
     esp = false
     if espFolder then espFolder:Destroy() espFolder = nil end
