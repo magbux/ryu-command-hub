@@ -1,0 +1,635 @@
+local player = game.Players.LocalPlayer
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+-- Command states
+local flying = false
+local noclip = false
+local esp = false
+local godmode = false
+local tptool = nil
+local infjump = false
+local infjumpConnection
+local spectating = false
+local spectateTarget = nil
+-- Variables for features
+local bodyVelocity, bodyGyro, connection, flyTrack, trail, particles
+local godConnection, noclipConnection
+local espFolder
+-- Create GUI
+local function createGUI()
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "CommandsGUI"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.Parent = player:WaitForChild("PlayerGui")
+   
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Name = "MainFrame"
+    MainFrame.Size = UDim2.new(0, 350, 0, 450)
+    MainFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Active = true
+    MainFrame.Draggable = true
+    MainFrame.Parent = ScreenGui
+   
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 12)
+    UICorner.Parent = MainFrame
+   
+    local UIShadow = Instance.new("Frame")
+    UIShadow.Name = "Shadow"
+    UIShadow.Size = UDim2.new(1, 10, 1, 10)
+    UIShadow.Position = UDim2.new(0, -5, 0, -5)
+    UIShadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    UIShadow.BackgroundTransparency = 0.7
+    UIShadow.BorderSizePixel = 0
+    UIShadow.ZIndex = 0
+    UIShadow.Parent = MainFrame
+   
+    local ShadowCorner = Instance.new("UICorner")
+    ShadowCorner.CornerRadius = UDim.new(0, 12)
+    ShadowCorner.Parent = UIShadow
+   
+    local Title = Instance.new("TextLabel")
+    Title.Name = "Title"
+    Title.Size = UDim2.new(1, -60, 0, 50)
+    Title.Position = UDim2.new(0, 0, 0, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = "ryu/sai command hub"
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextSize = 24
+    Title.Font = Enum.Font.GothamBold
+    Title.Parent = MainFrame
+   
+    local CloseButton = Instance.new("TextButton")
+    CloseButton.Name = "CloseButton"
+    CloseButton.Size = UDim2.new(0, 40, 0, 40)
+    CloseButton.Position = UDim2.new(1, -50, 0, 5)
+    CloseButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+    CloseButton.Text = "X"
+    CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CloseButton.TextSize = 20
+    CloseButton.Font = Enum.Font.GothamBold
+    CloseButton.BorderSizePixel = 0
+    CloseButton.Parent = MainFrame
+   
+    local CloseCorner = Instance.new("UICorner")
+    CloseCorner.CornerRadius = UDim.new(0, 8)
+    CloseCorner.Parent = CloseButton
+   
+    CloseButton.MouseButton1Click:Connect(function()
+        ScreenGui:Destroy()
+    end)
+   
+    local ScrollFrame = Instance.new("ScrollingFrame")
+    ScrollFrame.Name = "ScrollFrame"
+    ScrollFrame.Size = UDim2.new(1, -20, 1, -70)
+    ScrollFrame.Position = UDim2.new(0, 10, 0, 60)
+    ScrollFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    ScrollFrame.BorderSizePixel = 0
+    ScrollFrame.ScrollBarThickness = 6
+    ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 255)
+    ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+    ScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    ScrollFrame.Parent = MainFrame
+   
+    local ScrollCorner = Instance.new("UICorner")
+    ScrollCorner.CornerRadius = UDim.new(0, 8)
+    ScrollCorner.Parent = ScrollFrame
+   
+    local UIListLayout = Instance.new("UIListLayout")
+    UIListLayout.Padding = UDim.new(0, 8)
+    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    UIListLayout.Parent = ScrollFrame
+   
+    local UIPadding = Instance.new("UIPadding")
+    UIPadding.PaddingTop = UDim.new(0, 10)
+    UIPadding.PaddingBottom = UDim.new(0, 10)
+    UIPadding.PaddingLeft = UDim.new(0, 10)
+    UIPadding.PaddingRight = UDim.new(0, 10)
+    UIPadding.Parent = ScrollFrame
+   
+    local commands = {
+        {cmd = "/fly", desc = "Enable flying (WASD + Space/Shift)"},
+        {cmd = "/unfly", desc = "Disable flying"},
+        {cmd = "/noclip", desc = "Walk through walls"},
+        {cmd = "/clip", desc = "Disable noclip"},
+        {cmd = "/esp", desc = "See players through walls"},
+        {cmd = "/unesp or /noesp", desc = "Disable ESP"},
+        {cmd = "/tptool", desc = "Click to teleport tool"},
+        {cmd = "/godmode", desc = "Invincibility"},
+        {cmd = "/ungodmode", desc = "Disable god mode"},
+        {cmd = "/reset", desc = "Force reset character"},
+        {cmd = "/spec <first4>", desc = "Spectate player by first 4 letters"},
+        {cmd = "/unspec", desc = "Stop spectating"},
+        {cmd = "/tpto <first4>", desc = "Teleport to player by first 4 letters"},
+        {cmd = "/ws <number>", desc = "Set walk speed"},
+        {cmd = "/jp <number>", desc = "Set jump power"},
+        {cmd = "/grav <number>", desc = "Set gravity"},
+        {cmd = "/infjump", desc = "Enable infinite jump"},
+        {cmd = "/uninfjump", desc = "Disable infinite jump"},
+        {cmd = "/invisible", desc = "Make character invisible"},
+        {cmd = "/visible", desc = "Make character visible"},
+        {cmd = "/btools", desc = "Give building tools"},
+        {cmd = "/fullbright", desc = "Enable full brightness"},
+        {cmd = "/unfullbright", desc = "Disable full brightness"},
+        {cmd = "/rejoin", desc = "Rejoin the server"}
+    }
+   
+    for _, cmdData in ipairs(commands) do
+        local CommandFrame = Instance.new("Frame")
+        CommandFrame.Size = UDim2.new(1, -10, 0, 60)
+        CommandFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+        CommandFrame.BorderSizePixel = 0
+        CommandFrame.Parent = ScrollFrame
+       
+        local CmdCorner = Instance.new("UICorner")
+        CmdCorner.CornerRadius = UDim.new(0, 6)
+        CmdCorner.Parent = CommandFrame
+       
+        local CmdText = Instance.new("TextLabel")
+        CmdText.Size = UDim2.new(1, -10, 0, 25)
+        CmdText.Position = UDim2.new(0, 5, 0, 5)
+        CmdText.BackgroundTransparency = 1
+        CmdText.Text = cmdData.cmd
+        CmdText.TextColor3 = Color3.fromRGB(100, 200, 255)
+        CmdText.TextSize = 16
+        CmdText.Font = Enum.Font.GothamBold
+        CmdText.TextXAlignment = Enum.TextXAlignment.Left
+        CmdText.Parent = CommandFrame
+       
+        local DescText = Instance.new("TextLabel")
+        DescText.Size = UDim2.new(1, -10, 0, 25)
+        DescText.Position = UDim2.new(0, 5, 0, 30)
+        DescText.BackgroundTransparency = 1
+        DescText.Text = cmdData.desc
+        DescText.TextColor3 = Color3.fromRGB(180, 180, 180)
+        DescText.TextSize = 13
+        DescText.Font = Enum.Font.Gotham
+        DescText.TextXAlignment = Enum.TextXAlignment.Left
+        DescText.Parent = CommandFrame
+    end
+end
+-- Helper function to find player by prefix
+local function findPlayer(prefix)
+    if not prefix then return nil end
+    prefix = prefix:lower()
+    for _, p in pairs(game.Players:GetPlayers()) do
+        if p.Name:lower():sub(1, #prefix) == prefix then
+            return p
+        end
+    end
+    return nil
+end
+-- Flying functions
+local function startFlying()
+    local character = player.Character
+    if not character or flying then return end
+   
+    local humanoid = character:FindFirstChild("Humanoid")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoid or not rootPart then return end
+   
+    flying = true
+   
+    bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.Parent = rootPart
+   
+    bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    bodyGyro.P = 10000
+    bodyGyro.Parent = rootPart
+   
+    connection = RunService.Heartbeat:Connect(function()
+        if not flying or not character.Parent then return end
+       
+        local camera = workspace.CurrentCamera
+        local moveDir = Vector3.new()
+       
+        if UIS:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + camera.CFrame.LookVector end
+        if UIS:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - camera.CFrame.LookVector end
+        if UIS:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - camera.CFrame.RightVector end
+        if UIS:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + camera.CFrame.RightVector end
+        if UIS:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
+        if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
+       
+        if moveDir.Magnitude > 0 then moveDir = moveDir.Unit end
+       
+        bodyVelocity.Velocity = moveDir * 100
+        bodyGyro.CFrame = camera.CFrame
+    end)
+   
+    print("Flying enabled!")
+end
+local function stopFlying()
+    flying = false
+    if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
+    if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
+    if connection then connection:Disconnect() connection = nil end
+   
+    local character = player.Character
+    if character then
+        local humanoid = character:FindFirstChild("Humanoid")
+        if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Freefall) end
+    end
+    print("Flying disabled!")
+end
+-- Noclip functions
+local function startNoclip()
+    if noclip then return end
+    noclip = true
+   
+    noclipConnection = RunService.Stepped:Connect(function()
+        if not noclip then return end
+        local character = player.Character
+        if character then
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
+    print("Noclip enabled!")
+end
+local function stopNoclip()
+    noclip = false
+    if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
+   
+    local character = player.Character
+    if character then
+        for _, part in pairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+    end
+    print("Noclip disabled!")
+end
+-- ESP functions
+local function startESP()
+    if esp then return end
+    esp = true
+   
+    espFolder = Instance.new("Folder")
+    espFolder.Name = "ESPFolder"
+    espFolder.Parent = workspace
+   
+    for _, otherPlayer in pairs(game.Players:GetPlayers()) do
+        if otherPlayer ~= player then
+            local function addESP(character)
+                if not character then return end
+                local rootPart = character:FindFirstChild("HumanoidRootPart")
+                if not rootPart then return end
+               
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "ESP"
+                highlight.FillColor = Color3.fromRGB(255, 100, 100)
+                highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+                highlight.FillTransparency = 0.5
+                highlight.OutlineTransparency = 0
+                highlight.Adornee = character
+                highlight.Parent = espFolder
+            end
+           
+            if otherPlayer.Character then addESP(otherPlayer.Character) end
+            otherPlayer.CharacterAdded:Connect(addESP)
+        end
+    end
+   
+    game.Players.PlayerAdded:Connect(function(newPlayer)
+        newPlayer.CharacterAdded:Connect(function(character)
+            if esp then
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "ESP"
+                highlight.FillColor = Color3.fromRGB(255, 100, 100)
+                highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+                highlight.FillTransparency = 0.5
+                highlight.OutlineTransparency = 0
+                highlight.Adornee = character
+                highlight.Parent = espFolder
+            end
+        end)
+    end)
+   
+    print("ESP enabled!")
+end
+local function stopESP()
+    esp = false
+    if espFolder then espFolder:Destroy() espFolder = nil end
+    print("ESP disabled!")
+end
+-- TP Tool
+local function createTPTool()
+    if tptool then return end
+   
+    local tool = Instance.new("Tool")
+    tool.Name = "TP Tool"
+    tool.RequiresHandle = false
+   
+    tool.Activated:Connect(function()
+        local mouse = player:GetMouse()
+        local character = player.Character
+        if character and mouse.Hit then
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                rootPart.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0))
+            end
+        end
+    end)
+   
+    tool.Parent = player.Backpack
+    tptool = tool
+    print("TP Tool equipped!")
+end
+-- God Mode
+local function startGodMode()
+    if godmode then return end
+    godmode = true
+   
+    godConnection = RunService.Heartbeat:Connect(function()
+        local char = player.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.Health = hum.MaxHealth
+                hum.BreakJointsOnDeath = false
+                pcall(function() hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false) end)
+                if hum.Health <= 0 then
+                    hum.Health = hum.MaxHealth
+                end
+            end
+        end
+    end)
+   
+    print("God Mode enabled!")
+end
+local function stopGodMode()
+    godmode = false
+    if godConnection then
+        godConnection:Disconnect()
+        godConnection = nil
+    end
+    print("God Mode disabled!")
+end
+-- Spectate
+local function startSpectate(target)
+    if not target or not target.Character then return end
+    local humanoid = target.Character:FindFirstChild("Humanoid")
+    if not humanoid then return end
+    workspace.CurrentCamera.CameraSubject = humanoid
+    spectating = true
+    spectateTarget = target
+    print("Spectating " .. target.Name)
+end
+
+local function stopSpectate()
+    if not player.Character then return end
+    local humanoid = player.Character:FindFirstChild("Humanoid")
+    if humanoid then
+        workspace.CurrentCamera.CameraSubject = humanoid
+    end
+    spectating = false
+    spectateTarget = nil
+    print("Stopped spectating")
+end
+-- Teleport to
+local function teleportTo(target)
+    if not target or not target.Character then return end
+    local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+    local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+    if rootPart and targetRoot then
+        rootPart.CFrame = targetRoot.CFrame * CFrame.new(0, 0, -3)
+    end
+    print("Teleported to " .. target.Name)
+end
+-- Walk Speed
+local function setWalkSpeed(speed)
+    local char = player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.WalkSpeed = speed
+            print("Walk speed set to " .. speed)
+        end
+    end
+end
+-- Jump Power
+local function setJumpPower(power)
+    local char = player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.JumpPower = power
+            print("Jump power set to " .. power)
+        end
+    end
+end
+-- Gravity
+local function setGravity(grav)
+    workspace.Gravity = grav
+    print("Gravity set to " .. grav)
+end
+-- Infinite Jump
+local function startInfJump()
+    if infjump then return end
+    infjump = true
+    infjumpConnection = UIS.JumpRequest:Connect(function()
+        local char = player.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end
+    end)
+    print("Infinite jump enabled!")
+end
+local function stopInfJump()
+    infjump = false
+    if infjumpConnection then
+        infjumpConnection:Disconnect()
+        infjumpConnection = nil
+    end
+    print("Infinite jump disabled!")
+end
+-- Invisible
+local function makeInvisible()
+    local char = player.Character
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                part.Transparency = 1
+            end
+            if part:IsA("Decal") then
+                part.Transparency = 1
+            end
+            if part:IsA("ParticleEmitter") or part:IsA("Trail") then
+                part.Enabled = false
+            end
+        end
+        print("Invisible enabled!")
+    end
+end
+local function makeVisible()
+    local char = player.Character
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                part.Transparency = 0
+            end
+            if part:IsA("Decal") then
+                part.Transparency = 0
+            end
+            if part:IsA("ParticleEmitter") or part:IsA("Trail") then
+                part.Enabled = true
+            end
+        end
+        print("Visible enabled!")
+    end
+end
+-- BTools
+local function giveBTools()
+    local tool1 = Instance.new("HopperBin")
+    tool1.BinType = Enum.BinType.Grab
+    tool1.Parent = player.Backpack
+
+    local tool2 = Instance.new("HopperBin")
+    tool2.BinType = Enum.BinType.Clone
+    tool2.Parent = player.Backpack
+
+    local tool3 = Instance.new("HopperBin")
+    tool3.BinType = Enum.BinType.Hammer
+    tool3.Parent = player.Backpack
+
+    print("BTools given!")
+end
+-- Fullbright
+local lightingConnection
+local originalAmbient, originalBrightness, originalFogEnd
+local function startFullbright()
+    if lightingConnection then return end
+    originalAmbient = game.Lighting.Ambient
+    originalBrightness = game.Lighting.Brightness
+    originalFogEnd = game.Lighting.FogEnd
+
+    lightingConnection = RunService.RenderStepped:Connect(function()
+        game.Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+        game.Lighting.Brightness = 1
+        game.Lighting.FogEnd = 999999
+    end)
+    print("Fullbright enabled!")
+end
+local function stopFullbright()
+    if lightingConnection then
+        lightingConnection:Disconnect()
+        lightingConnection = nil
+    end
+    game.Lighting.Ambient = originalAmbient
+    game.Lighting.Brightness = originalBrightness
+    game.Lighting.FogEnd = originalFogEnd
+    print("Fullbright disabled!")
+end
+-- Rejoin
+local function rejoinServer()
+    game:GetService("TeleportService"):Teleport(game.PlaceId, player)
+    print("Rejoining server...")
+end
+-- Command handler
+local function handleCommand(msg)
+    msg = msg:lower()
+    local parts = string.split(msg, " ")
+    local cmd = parts[1]
+    local arg1 = parts[2]
+   
+    if cmd == "/fly" then
+        startFlying()
+    elseif cmd == "/unfly" then
+        stopFlying()
+    elseif cmd == "/noclip" then
+        startNoclip()
+    elseif cmd == "/clip" then
+        stopNoclip()
+    elseif cmd == "/esp" then
+        startESP()
+    elseif cmd == "/unesp" or cmd == "/noesp" then
+        stopESP()
+    elseif cmd == "/tptool" then
+        createTPTool()
+    elseif cmd == "/godmode" then
+        startGodMode()
+    elseif cmd == "/ungodmode" then
+        stopGodMode()
+    elseif cmd == "/reset" then
+        if player.Character then
+            player.Character:BreakJoints()
+        end
+    elseif cmd == "/spec" then
+        local target = findPlayer(arg1)
+        if target then
+            startSpectate(target)
+        else
+            print("Player not found!")
+        end
+    elseif cmd == "/unspec" then
+        stopSpectate()
+    elseif cmd == "/tpto" then
+        local target = findPlayer(arg1)
+        if target then
+            teleportTo(target)
+        else
+            print("Player not found!")
+        end
+    elseif cmd == "/ws" then
+        local speed = tonumber(arg1)
+        if speed then
+            setWalkSpeed(speed)
+        else
+            print("Invalid number!")
+        end
+    elseif cmd == "/jp" then
+        local power = tonumber(arg1)
+        if power then
+            setJumpPower(power)
+        else
+            print("Invalid number!")
+        end
+    elseif cmd == "/grav" then
+        local grav = tonumber(arg1)
+        if grav then
+            setGravity(grav)
+        else
+            print("Invalid number!")
+        end
+    elseif cmd == "/infjump" then
+        startInfJump()
+    elseif cmd == "/uninfjump" then
+        stopInfJump()
+    elseif cmd == "/invisible" then
+        makeInvisible()
+    elseif cmd == "/visible" then
+        makeVisible()
+    elseif cmd == "/btools" then
+        giveBTools()
+    elseif cmd == "/fullbright" then
+        startFullbright()
+    elseif cmd == "/unfullbright" then
+        stopFullbright()
+    elseif cmd == "/rejoin" then
+        rejoinServer()
+    end
+end
+player.Chatted:Connect(handleCommand)
+player.CharacterAdded:Connect(function()
+    if flying then stopFlying() end
+    if noclip then stopNoclip() end
+    if infjump then stopInfJump() end
+    if godmode then stopGodMode() end
+    if spectating and spectateTarget then startSpectate(spectateTarget) end
+    tptool = nil
+end)
+createGUI()
+print("Command system loaded! Type commands in chat to use.")
