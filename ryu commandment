@@ -2,6 +2,8 @@ local player = game.Players.LocalPlayer
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local TextChatService = game:GetService("TextChatService")
+local chatChannel = TextChatService.TextChannels.RBXGeneral
 -- Command states
 local flying = false
 local noclip = false
@@ -12,6 +14,8 @@ local infjump = false
 local infjumpConnection
 local spectating = false
 local spectateTarget = nil
+local flySpeed = 100
+local healthChangedConn
 -- Variables for features
 local bodyVelocity, bodyGyro, connection, flyTrack, trail, particles
 local godConnection, noclipConnection
@@ -113,6 +117,7 @@ local function createGUI()
     local commands = {
         {cmd = "/fly", desc = "Enable flying (WASD + Space/Shift)"},
         {cmd = "/unfly", desc = "Disable flying"},
+        {cmd = "/flyspeed <number>", desc = "Set fly speed"},
         {cmd = "/noclip", desc = "Walk through walls"},
         {cmd = "/clip", desc = "Disable noclip"},
         {cmd = "/esp", desc = "See players through walls"},
@@ -134,7 +139,14 @@ local function createGUI()
         {cmd = "/btools", desc = "Give building tools"},
         {cmd = "/fullbright", desc = "Enable full brightness"},
         {cmd = "/unfullbright", desc = "Disable full brightness"},
-        {cmd = "/rejoin", desc = "Rejoin the server"}
+        {cmd = "/rejoin", desc = "Rejoin the server"},
+        {cmd = "/fov <number>", desc = "Set camera FOV"},
+        {cmd = "/time <hour>", desc = "Set time of day (0-24)"},
+        {cmd = "/fog <number>", desc = "Set fog end distance"},
+        {cmd = "/speedcoil", desc = "Activate speed coil (ws 50)"},
+        {cmd = "/unspeedcoil", desc = "Deactivate speed coil (ws 16)"},
+        {cmd = "/gravitycoil", desc = "Activate gravity coil (jp 100, grav 50)"},
+        {cmd = "/ungravitycoil", desc = "Deactivate gravity coil (jp 50, grav 196)"}
     }
   
     for _, cmdData in ipairs(commands) do
@@ -148,16 +160,16 @@ local function createGUI()
         CmdCorner.CornerRadius = UDim.new(0, 6)
         CmdCorner.Parent = CommandFrame
       
-        local CmdText = Instance.new("TextLabel")
-        CmdText.Size = UDim2.new(1, -10, 0, 25)
-        CmdText.Position = UDim2.new(0, 5, 0, 5)
-        CmdText.BackgroundTransparency = 1
-        CmdText.Text = cmdData.cmd
-        CmdText.TextColor3 = Color3.fromRGB(100, 200, 255)
-        CmdText.TextSize = 16
-        CmdText.Font = Enum.Font.GothamBold
-        CmdText.TextXAlignment = Enum.TextXAlignment.Left
-        CmdText.Parent = CommandFrame
+        local CmdButton = Instance.new("TextButton")
+        CmdButton.Size = UDim2.new(1, -10, 0, 25)
+        CmdButton.Position = UDim2.new(0, 5, 0, 5)
+        CmdButton.BackgroundTransparency = 1
+        CmdButton.Text = cmdData.cmd
+        CmdButton.TextColor3 = Color3.fromRGB(100, 200, 255)
+        CmdButton.TextSize = 16
+        CmdButton.Font = Enum.Font.GothamBold
+        CmdButton.TextXAlignment = Enum.TextXAlignment.Left
+        CmdButton.Parent = CommandFrame
       
         local DescText = Instance.new("TextLabel")
         DescText.Size = UDim2.new(1, -10, 0, 25)
@@ -169,6 +181,38 @@ local function createGUI()
         DescText.Font = Enum.Font.Gotham
         DescText.TextXAlignment = Enum.TextXAlignment.Left
         DescText.Parent = CommandFrame
+
+        CmdButton.MouseButton1Click:Connect(function()
+            local command = cmdData.cmd
+            local sendCmd = command:match("^/[^ ]+")
+            if command:find("<") then
+                CommandFrame.Size = UDim2.new(1, -10, 0, 90)
+                local inputBox = Instance.new("TextBox")
+                inputBox.Size = UDim2.new(1, -10, 0, 25)
+                inputBox.Position = UDim2.new(0, 5, 0, 55)
+                inputBox.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+                inputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+                inputBox.PlaceholderText = "Enter argument"
+                inputBox.Font = Enum.Font.Gotham
+                inputBox.TextSize = 14
+                inputBox.Parent = CommandFrame
+                inputBox:CaptureFocus()
+                inputBox.FocusLost:Connect(function(enterPressed)
+                    if enterPressed then
+                        local arg = inputBox.Text
+                        if arg ~= "" then
+                            local fullCmd = command:gsub("<.*>", arg)
+                            local sendFull = fullCmd:match("^/[^ ]+ %S+")
+                            chatChannel:SendAsync(sendFull or fullCmd)
+                        end
+                    end
+                    inputBox:Destroy()
+                    CommandFrame.Size = UDim2.new(1, -10, 0, 60)
+                end)
+            else
+                chatChannel:SendAsync(sendCmd or command)
+            end
+        end)
     end
 end
 -- Helper function to find player by prefix
@@ -218,7 +262,7 @@ local function startFlying()
       
         if moveDir.Magnitude > 0 then moveDir = moveDir.Unit end
       
-        bodyVelocity.Velocity = moveDir * 100
+        bodyVelocity.Velocity = moveDir * flySpeed
         bodyGyro.CFrame = camera.CFrame
     end)
   
@@ -362,6 +406,17 @@ local function startGodMode()
             end
         end
     end)
+    local char = player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            healthChangedConn = hum.HealthChanged:Connect(function(h)
+                if h < math.huge then
+                    hum.Health = math.huge
+                end
+            end)
+        end
+    end
   
     print("God Mode enabled!")
 end
@@ -370,6 +425,10 @@ local function stopGodMode()
     if godConnection then
         godConnection:Disconnect()
         godConnection = nil
+    end
+    if healthChangedConn then
+        healthChangedConn:Disconnect()
+        healthChangedConn = nil
     end
     local char = player.Character
     if char then
@@ -385,9 +444,15 @@ local function stopGodMode()
 end
 -- Spectate
 local function startSpectate(target)
-    if not target or not target.Character then return end
+    if not target or not target.Character then 
+        print("Invalid target for spectate!")
+        return 
+    end
     local humanoid = target.Character:FindFirstChild("Humanoid")
-    if not humanoid then return end
+    if not humanoid then 
+        print("No humanoid found for target!")
+        return 
+    end
     workspace.CurrentCamera.CameraSubject = humanoid
     spectating = true
     spectateTarget = target
@@ -541,6 +606,41 @@ local function rejoinServer()
     game:GetService("TeleportService"):Teleport(game.PlaceId, player)
     print("Rejoining server...")
 end
+-- Additional functions
+local function setFlySpeed(speed)
+    flySpeed = speed
+    print("Fly speed set to " .. speed)
+end
+local function setFOV(fov)
+    workspace.CurrentCamera.FieldOfView = fov
+    print("FOV set to " .. fov)
+end
+local function setTimeOfDay(hour)
+    game.Lighting.TimeOfDay = hour .. ":00:00"
+    print("Time set to " .. hour .. ":00")
+end
+local function setFogEnd(distance)
+    game.Lighting.FogEnd = distance
+    print("Fog end set to " .. distance)
+end
+local function activateSpeedCoil()
+    setWalkSpeed(50)
+    print("Speed coil activated!")
+end
+local function deactivateSpeedCoil()
+    setWalkSpeed(16)
+    print("Speed coil deactivated!")
+end
+local function activateGravityCoil()
+    setJumpPower(100)
+    setGravity(50)
+    print("Gravity coil activated!")
+end
+local function deactivateGravityCoil()
+    setJumpPower(50)
+    setGravity(196.2)
+    print("Gravity coil deactivated!")
+end
 -- Command handler
 local function handleCommand(msg)
     msg = msg:lower()
@@ -552,6 +652,13 @@ local function handleCommand(msg)
         startFlying()
     elseif cmd == "/unfly" then
         stopFlying()
+    elseif cmd == "/flyspeed" then
+        local speed = tonumber(arg1)
+        if speed then
+            setFlySpeed(speed)
+        else
+            print("Invalid number!")
+        end
     elseif cmd == "/noclip" then
         startNoclip()
     elseif cmd == "/clip" then
@@ -623,6 +730,35 @@ local function handleCommand(msg)
         stopFullbright()
     elseif cmd == "/rejoin" then
         rejoinServer()
+    elseif cmd == "/fov" then
+        local fov = tonumber(arg1)
+        if fov then
+            setFOV(fov)
+        else
+            print("Invalid number!")
+        end
+    elseif cmd == "/time" then
+        local hour = tonumber(arg1)
+        if hour then
+            setTimeOfDay(hour)
+        else
+            print("Invalid number!")
+        end
+    elseif cmd == "/fog" then
+        local dist = tonumber(arg1)
+        if dist then
+            setFogEnd(dist)
+        else
+            print("Invalid number!")
+        end
+    elseif cmd == "/speedcoil" then
+        activateSpeedCoil()
+    elseif cmd == "/unspeedcoil" then
+        deactivateSpeedCoil()
+    elseif cmd == "/gravitycoil" then
+        activateGravityCoil()
+    elseif cmd == "/ungravitycoil" then
+        deactivateGravityCoil()
     end
 end
 player.Chatted:Connect(handleCommand)
