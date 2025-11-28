@@ -22,7 +22,7 @@ local function createGUI()
     ScreenGui.Name = "CommandsGUI"
     ScreenGui.ResetOnSpawn = false
     ScreenGui.Parent = player:WaitForChild("PlayerGui")
-   
+  
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
     MainFrame.Size = UDim2.new(0, 350, 0, 450)
@@ -32,11 +32,11 @@ local function createGUI()
     MainFrame.Active = true
     MainFrame.Draggable = true
     MainFrame.Parent = ScreenGui
-   
+  
     local UICorner = Instance.new("UICorner")
     UICorner.CornerRadius = UDim.new(0, 12)
     UICorner.Parent = MainFrame
-   
+  
     local UIShadow = Instance.new("Frame")
     UIShadow.Name = "Shadow"
     UIShadow.Size = UDim2.new(1, 10, 1, 10)
@@ -46,11 +46,11 @@ local function createGUI()
     UIShadow.BorderSizePixel = 0
     UIShadow.ZIndex = 0
     UIShadow.Parent = MainFrame
-   
+  
     local ShadowCorner = Instance.new("UICorner")
     ShadowCorner.CornerRadius = UDim.new(0, 12)
     ShadowCorner.Parent = UIShadow
-   
+  
     local Title = Instance.new("TextLabel")
     Title.Name = "Title"
     Title.Size = UDim2.new(1, -60, 0, 50)
@@ -61,7 +61,7 @@ local function createGUI()
     Title.TextSize = 24
     Title.Font = Enum.Font.GothamBold
     Title.Parent = MainFrame
-   
+  
     local CloseButton = Instance.new("TextButton")
     CloseButton.Name = "CloseButton"
     CloseButton.Size = UDim2.new(0, 40, 0, 40)
@@ -73,15 +73,15 @@ local function createGUI()
     CloseButton.Font = Enum.Font.GothamBold
     CloseButton.BorderSizePixel = 0
     CloseButton.Parent = MainFrame
-   
+  
     local CloseCorner = Instance.new("UICorner")
     CloseCorner.CornerRadius = UDim.new(0, 8)
     CloseCorner.Parent = CloseButton
-   
+  
     CloseButton.MouseButton1Click:Connect(function()
         ScreenGui:Destroy()
     end)
-   
+  
     local ScrollFrame = Instance.new("ScrollingFrame")
     ScrollFrame.Name = "ScrollFrame"
     ScrollFrame.Size = UDim2.new(1, -20, 1, -70)
@@ -93,23 +93,23 @@ local function createGUI()
     ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
     ScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
     ScrollFrame.Parent = MainFrame
-   
+  
     local ScrollCorner = Instance.new("UICorner")
     ScrollCorner.CornerRadius = UDim.new(0, 8)
     ScrollCorner.Parent = ScrollFrame
-   
+  
     local UIListLayout = Instance.new("UIListLayout")
     UIListLayout.Padding = UDim.new(0, 8)
     UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
     UIListLayout.Parent = ScrollFrame
-   
+  
     local UIPadding = Instance.new("UIPadding")
     UIPadding.PaddingTop = UDim.new(0, 10)
     UIPadding.PaddingBottom = UDim.new(0, 10)
     UIPadding.PaddingLeft = UDim.new(0, 10)
     UIPadding.PaddingRight = UDim.new(0, 10)
     UIPadding.Parent = ScrollFrame
-   
+  
     local commands = {
         {cmd = "/fly", desc = "Enable flying (WASD + Space/Shift)"},
         {cmd = "/unfly", desc = "Disable flying"},
@@ -136,18 +136,18 @@ local function createGUI()
         {cmd = "/unfullbright", desc = "Disable full brightness"},
         {cmd = "/rejoin", desc = "Rejoin the server"}
     }
-   
+  
     for _, cmdData in ipairs(commands) do
         local CommandFrame = Instance.new("Frame")
         CommandFrame.Size = UDim2.new(1, -10, 0, 60)
         CommandFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
         CommandFrame.BorderSizePixel = 0
         CommandFrame.Parent = ScrollFrame
-       
+      
         local CmdCorner = Instance.new("UICorner")
         CmdCorner.CornerRadius = UDim.new(0, 6)
         CmdCorner.Parent = CommandFrame
-       
+      
         local CmdText = Instance.new("TextLabel")
         CmdText.Size = UDim2.new(1, -10, 0, 25)
         CmdText.Position = UDim2.new(0, 5, 0, 5)
@@ -158,7 +158,7 @@ local function createGUI()
         CmdText.Font = Enum.Font.GothamBold
         CmdText.TextXAlignment = Enum.TextXAlignment.Left
         CmdText.Parent = CommandFrame
-       
+      
         local DescText = Instance.new("TextLabel")
         DescText.Size = UDim2.new(1, -10, 0, 25)
         DescText.Position = UDim2.new(0, 5, 0, 30)
@@ -186,42 +186,42 @@ end
 local function startFlying()
     local character = player.Character
     if not character or flying then return end
-   
+  
     local humanoid = character:FindFirstChild("Humanoid")
     local rootPart = character:FindFirstChild("HumanoidRootPart")
     if not humanoid or not rootPart then return end
-   
+  
     flying = true
-   
+  
     bodyVelocity = Instance.new("BodyVelocity")
     bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
     bodyVelocity.Velocity = Vector3.new(0, 0, 0)
     bodyVelocity.Parent = rootPart
-   
+  
     bodyGyro = Instance.new("BodyGyro")
     bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
     bodyGyro.P = 10000
     bodyGyro.Parent = rootPart
-   
+  
     connection = RunService.Heartbeat:Connect(function()
         if not flying or not character.Parent then return end
-       
+      
         local camera = workspace.CurrentCamera
         local moveDir = Vector3.new()
-       
+      
         if UIS:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + camera.CFrame.LookVector end
         if UIS:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - camera.CFrame.LookVector end
         if UIS:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - camera.CFrame.RightVector end
         if UIS:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + camera.CFrame.RightVector end
         if UIS:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
         if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
-       
+      
         if moveDir.Magnitude > 0 then moveDir = moveDir.Unit end
-       
+      
         bodyVelocity.Velocity = moveDir * 100
         bodyGyro.CFrame = camera.CFrame
     end)
-   
+  
     print("Flying enabled!")
 end
 local function stopFlying()
@@ -229,7 +229,7 @@ local function stopFlying()
     if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
     if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
     if connection then connection:Disconnect() connection = nil end
-   
+  
     local character = player.Character
     if character then
         local humanoid = character:FindFirstChild("Humanoid")
@@ -241,7 +241,7 @@ end
 local function startNoclip()
     if noclip then return end
     noclip = true
-   
+  
     noclipConnection = RunService.Stepped:Connect(function()
         if not noclip then return end
         local character = player.Character
@@ -258,7 +258,7 @@ end
 local function stopNoclip()
     noclip = false
     if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
-   
+  
     local character = player.Character
     if character then
         for _, part in pairs(character:GetDescendants()) do
@@ -273,18 +273,18 @@ end
 local function startESP()
     if esp then return end
     esp = true
-   
+  
     espFolder = Instance.new("Folder")
     espFolder.Name = "ESPFolder"
     espFolder.Parent = workspace
-   
+  
     for _, otherPlayer in pairs(game.Players:GetPlayers()) do
         if otherPlayer ~= player then
             local function addESP(character)
                 if not character then return end
                 local rootPart = character:FindFirstChild("HumanoidRootPart")
                 if not rootPart then return end
-               
+              
                 local highlight = Instance.new("Highlight")
                 highlight.Name = "ESP"
                 highlight.FillColor = Color3.fromRGB(255, 100, 100)
@@ -294,12 +294,12 @@ local function startESP()
                 highlight.Adornee = character
                 highlight.Parent = espFolder
             end
-           
+          
             if otherPlayer.Character then addESP(otherPlayer.Character) end
             otherPlayer.CharacterAdded:Connect(addESP)
         end
     end
-   
+  
     game.Players.PlayerAdded:Connect(function(newPlayer)
         newPlayer.CharacterAdded:Connect(function(character)
             if esp then
@@ -314,7 +314,7 @@ local function startESP()
             end
         end)
     end)
-   
+  
     print("ESP enabled!")
 end
 local function stopESP()
@@ -325,11 +325,11 @@ end
 -- TP Tool
 local function createTPTool()
     if tptool then return end
-   
+  
     local tool = Instance.new("Tool")
     tool.Name = "TP Tool"
     tool.RequiresHandle = false
-   
+  
     tool.Activated:Connect(function()
         local mouse = player:GetMouse()
         local character = player.Character
@@ -340,7 +340,7 @@ local function createTPTool()
             end
         end
     end)
-   
+  
     tool.Parent = player.Backpack
     tptool = tool
     print("TP Tool equipped!")
@@ -349,22 +349,20 @@ end
 local function startGodMode()
     if godmode then return end
     godmode = true
-   
+  
     godConnection = RunService.Heartbeat:Connect(function()
         local char = player.Character
         if char then
             local hum = char:FindFirstChildOfClass("Humanoid")
             if hum then
-                hum.Health = hum.MaxHealth
+                hum.MaxHealth = math.huge
+                hum.Health = math.huge
                 hum.BreakJointsOnDeath = false
                 pcall(function() hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false) end)
-                if hum.Health <= 0 then
-                    hum.Health = hum.MaxHealth
-                end
             end
         end
     end)
-   
+  
     print("God Mode enabled!")
 end
 local function stopGodMode()
@@ -372,6 +370,16 @@ local function stopGodMode()
     if godConnection then
         godConnection:Disconnect()
         godConnection = nil
+    end
+    local char = player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.MaxHealth = 100
+            hum.Health = 100
+            hum.BreakJointsOnDeath = true
+            pcall(function() hum:SetStateEnabled(Enum.HumanoidStateType.Dead, true) end)
+        end
     end
     print("God Mode disabled!")
 end
@@ -385,7 +393,6 @@ local function startSpectate(target)
     spectateTarget = target
     print("Spectating " .. target.Name)
 end
-
 local function stopSpectate()
     if not player.Character then return end
     local humanoid = player.Character:FindFirstChild("Humanoid")
@@ -496,15 +503,12 @@ local function giveBTools()
     local tool1 = Instance.new("HopperBin")
     tool1.BinType = Enum.BinType.Grab
     tool1.Parent = player.Backpack
-
     local tool2 = Instance.new("HopperBin")
     tool2.BinType = Enum.BinType.Clone
     tool2.Parent = player.Backpack
-
     local tool3 = Instance.new("HopperBin")
     tool3.BinType = Enum.BinType.Hammer
     tool3.Parent = player.Backpack
-
     print("BTools given!")
 end
 -- Fullbright
@@ -515,7 +519,6 @@ local function startFullbright()
     originalAmbient = game.Lighting.Ambient
     originalBrightness = game.Lighting.Brightness
     originalFogEnd = game.Lighting.FogEnd
-
     lightingConnection = RunService.RenderStepped:Connect(function()
         game.Lighting.Ambient = Color3.fromRGB(255, 255, 255)
         game.Lighting.Brightness = 1
@@ -544,7 +547,7 @@ local function handleCommand(msg)
     local parts = string.split(msg, " ")
     local cmd = parts[1]
     local arg1 = parts[2]
-   
+  
     if cmd == "/fly" then
         startFlying()
     elseif cmd == "/unfly" then
@@ -627,7 +630,7 @@ player.CharacterAdded:Connect(function()
     if flying then stopFlying() end
     if noclip then stopNoclip() end
     if infjump then stopInfJump() end
-    if godmode then stopGodMode() end
+    if godmode then startGodMode() end
     if spectating and spectateTarget then startSpectate(spectateTarget) end
     tptool = nil
 end)
